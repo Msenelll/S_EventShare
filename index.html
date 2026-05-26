@@ -283,20 +283,9 @@
     // Google Apps Script Web App dağıtım URL'nizi buraya yapıştırın.
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwXbV7_1yxUjG9-U640nxOiDFpYxTAHcLT04ROWp4sH9J-2L5EsqTCSLlI2AQiVu5TD/exec';
 
-    // Dinamik Parça Boyutu Belirleme (Güncellenmiş - Ultra Güvenli Sınırlar)
-    // Dosya boyutuna göre ideal parça boyutunu hesaplar (Google Drive 256KB katı kuralına uygun).
-    // Yavaş internet bağlantılarında (özellikle mobil yüklemelerde) 20MB veya 35MB boyutundaki büyük parçalar 
-    // zaman aşımına (timeout) düşebileceği için üst parça limiti maksimum 10MB olarak sınırlandırılmıştır.
-    function calculateChunkSize(fileSize) {
-      const MB = 1024 * 1024;
-      if (fileSize <= 10 * MB) {
-        return 2.5 * MB; // 10MB ve altı için 2.5MB parçalar (hızlı ve kopmalara karşı son derece dirençli)
-      } else if (fileSize <= 50 * MB) {
-        return 5 * MB;   // 50MB ve altı için 5MB parçalar (optimum güvenlik ve hız dengesi)
-      } else {
-        return 10 * MB;  // 50MB ve üzeri büyük dosyalar için maksimum 10MB (güvenli hız sınırı, timeout riskini sıfırlar)
-      }
-    }
+    // Parça boyutu 5MB sabit (Google Drive 256KB katı kuralına uygun: 5MB = 20 × 256KB ✓)
+    // 5MB altındaki dosyalar (örn. 4.16MB fotoğraf) TEK SEFERDE yüklenir, hiç bölünmez.
+    const CHUNK_SIZE = 5 * 1024 * 1024;
 
     // ==========================================
     // 📌 DOM BİLEŞENLERİ
@@ -512,10 +501,9 @@
 
           // Parçalı Yükleme (Chunked PUT requests)
           let startByte = 0;
-          const activeChunkSize = calculateChunkSize(file.size);
 
           while (startByte < file.size) {
-            const endByte = Math.min(startByte + activeChunkSize, file.size);
+            const endByte = Math.min(startByte + CHUNK_SIZE, file.size);
             const chunkSlice = file.slice(startByte, endByte);
             const currentChunkSize = endByte - startByte;
 
@@ -598,14 +586,15 @@
      * Ağ hatalarına karşı otomatik yeniden deneme (retry) mekanizmasına sahiptir.
      */
     async function uploadChunkWithRetry(uploadUrl, chunk, start, end, totalSize, retryCount = 0) {
-      const maxRetries = 4;
+      const maxRetries = 3;
       const rangeHeader = `bytes ${start}-${end - 1}/${totalSize}`;
 
       try {
         const response = await fetch(uploadUrl, {
           method: 'PUT',
           headers: {
-            'Content-Length': (end - start).toString(),
+            // Content-Length kasıtlı olarak eklenmedi: tarayıcı Fetch API'sinde bu başlık
+            // 'yasaklı başlık' (forbidden header) kapsamındadır, tarayıcı otomatik hesaplar.
             'Content-Range': rangeHeader
           },
           body: chunk
@@ -615,17 +604,25 @@
         if (response.status === 308 || response.status === 200 || response.status === 201) {
           return true;
         } else {
-          throw new Error(`Google API beklenmeyen durum kodu döndü: ${response.status}`);
+          // Gerçek HTTP hatası - retry yerine direkt fırlat (yeniden deneme bu durumu çözmez)
+          const bodyText = await response.text().catch(() => '');
+          console.error(`Google API Hata ${response.status}: ${bodyText}`);
+          throw new Error(`FATAL:${response.status}`);
         }
       } catch (err) {
+        // FATAL hatalar (4xx) retry ile düzelmez, direkt fırlat
+        if (err.message.startsWith('FATAL:')) {
+          const statusCode = err.message.split(':')[1];
+          throw new Error(`Yükleme API hatası (HTTP ${statusCode}). Lütfen Apps Script backend loglarını kontrol edin.`);
+        }
         if (retryCount < maxRetries) {
-          // Üstel geri çekilme (exponential backoff) ile yeniden deneme
-          const delay = Math.pow(2, retryCount) * 1500;
-          console.warn(`Hata: ${err.message}. ${delay}ms sonra tekrar deneniyor (${retryCount + 1}/${maxRetries})...`);
+          // Ağ hatası için üstel geri çekilme (exponential backoff)
+          const delay = Math.pow(2, retryCount) * 1000;
+          console.warn(`Ağ hatası: ${err.message}. ${delay}ms sonra tekrar deneniyor (${retryCount + 1}/${maxRetries})...`);
           await new Promise(resolve => setTimeout(resolve, delay));
           return await uploadChunkWithRetry(uploadUrl, chunk, start, end, totalSize, retryCount + 1);
         } else {
-          throw new Error(`Dosya parçası ${rangeHeader} yüklenemedi. Maksimum deneme sınırına ulaşıldı. Lütfen internet bağlantınızı kontrol edin.`);
+          throw new Error(`Ağ bağlantısı kesildi. Lütfen internet bağlantınızı kontrol edin ve tekrar deneyin.`);
         }
       }
     }

@@ -132,8 +132,11 @@ function initiateResumableUpload(fileName, fileSize, mimeType, folderId) {
       contentType: "application/json; charset=UTF-8",
       headers: {
         "Authorization": "Bearer " + ScriptApp.getOAuthToken(),
-        "X-Upload-Content-Type": mimeType,
-        "X-Upload-Content-Length": fileSize.toString()
+        "X-Upload-Content-Type": mimeType
+        // NOT: X-Upload-Content-Length KASITLI OLARAK EKSİK BIRAKILDI.
+        // Bu başlık eklenirse Google Drive API'si dosyanın tek seferde geleceğini bekler.
+        // Frontend parçalı (chunked) yükleme yaptığında 2. chunk'ta API isteği reddeder.
+        // Bu başlık olmadan API, parçalı (multi-chunk) yüklemeyi doğal olarak kabul eder.
       },
       payload: JSON.stringify(metadata),
       muteHttpExceptions: true
