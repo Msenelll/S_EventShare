@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>S_EventShare - Güvenli Dosya Paylaşımı</title>
+  <title>Sinem & Mehmet Galerisi</title>
   <!-- Modern Tipografi için Google Fonts (Outfit) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -91,12 +91,12 @@
       <div>
         <h1
           class="text-lg font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-          S_EventShare</h1>
-        <p class="text-[10px] text-violet-400 tracking-wider font-semibold uppercase">Güvenli Medya Paylaşımı</p>
+          Sinem & Mehmet Galerisi</h1>
+        <p class="text-[10px] text-violet-400 tracking-wider font-semibold uppercase">Güvenli Fotoğraf & Video Paylaşımı</p>
       </div>
     </div>
     <span
-      class="text-xs px-2.5 py-1 rounded-full bg-violet-500/10 border border-violet-500/25 text-violet-300 font-medium">v0.1.0</span>
+      class="text-xs px-2.5 py-1 rounded-full bg-violet-500/10 border border-violet-500/25 text-violet-300 font-medium">v1.0.2</span>
   </header>
 
   <!-- Ana İçerik (Main Content) -->
@@ -236,7 +236,7 @@
 
     <!-- BAŞARILI EKRANI (SUCCESS SCREEN) -->
     <div id="success-card"
-      class="hidden glass rounded-3xl p-6 shadow-2xl shadow-slate-950/50 flex flex-col items-center justify-center gap-6 relative min-h-[350px] text-center overflow-hidden">
+      class="hidden glass rounded-3xl p-6 shadow-2xl shadow-slate-950/50 flex flex-col items-center justify-center gap-6 relative min-h-[300px] text-center overflow-hidden">
 
       <!-- Başarı Efekti Neon Glow -->
       <div class="absolute inset-0 bg-emerald-500/5 blur-[50px] rounded-full"></div>
@@ -248,16 +248,8 @@
 
       <div class="flex flex-col gap-1.5 z-10">
         <h3 class="text-xl font-bold text-white">Yükleme Başarıyla Tamamlandı!</h3>
-        <p class="text-xs text-slate-400">Tüm dosyalarınız güvenli bir şekilde Google Drive klasörünüze aktarıldı ve
-          kayıt altına alındı.</p>
+        <p class="text-xs text-slate-400">Tüm dosyalarınız güvenli bir şekilde galeriye aktarıldı ve kayıt altına alındı.</p>
       </div>
-
-      <!-- Kullanıcı Klasör Linki Butonu -->
-      <a id="folder-link-btn" href="#" target="_blank"
-        class="z-10 w-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/35 text-emerald-300 font-semibold py-3 px-4 rounded-xl text-xs transition-all duration-300 flex items-center justify-center gap-2 group">
-        <i data-lucide="folder-open" class="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform"></i>
-        Google Drive Klasörünü Aç
-      </a>
 
       <!-- Yeni Yükleme Başlat Butonu -->
       <button id="reset-btn"
@@ -268,9 +260,13 @@
 
   </main>
 
+  <!-- Modern Toast Notification Container -->
+  <div id="toast-container" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2.5 w-full max-w-[340px] px-4 pointer-events-none"></div>
+
   <!-- Alt Bilgi (Footer) -->
   <footer class="w-full max-w-md mx-auto px-6 py-4 text-center text-[10px] text-slate-600 z-10 relative">
-    <p>© 2026 S_EventShare. Google Drive & Apps Script API Altyapısı ile Korunmaktadır.</p>
+    <p>© 2026 Sinem & Mehmet Galerisi. Google Drive & Apps Script API Altyapısı ile Korunmaktadır.</p>
+    <p class="mt-1 font-semibold text-violet-400/50">Made by Mehmet Şenel</p>
   </footer>
 
   <!-- ==========================================
@@ -308,7 +304,6 @@
     const totalPercent = document.getElementById('total-percent');
     const totalProgressBar = document.getElementById('total-progress-bar');
 
-    const folderLinkBtn = document.getElementById('folder-link-btn');
     const resetBtn = document.getElementById('reset-btn');
 
     let selectedFiles = [];
@@ -437,11 +432,11 @@
       e.preventDefault();
 
       if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
-        alert('SCRIPT_URL yapılandırılmamış!');
+        showToast('SCRIPT_URL yapılandırılmamış!', 'error');
         return;
       }
       if (selectedFiles.length === 0) {
-        alert('Lütfen en az bir dosya seçin.');
+        showToast('Lütfen en az bir dosya seçin.', 'error');
         return;
       }
 
@@ -450,6 +445,7 @@
 
       const name    = nameInput.value.trim();
       const surname = surnameInput.value.trim();
+      let rowNumber = null;
 
       try {
         // AŞAMA 1: Kullanıcıya özel Drive klasörü oluştur
@@ -462,7 +458,25 @@
         const folderUrl = folderResponse.folderUrl;
         const totalBytes = selectedFiles.reduce((acc, f) => acc + f.size, 0);
         let   accumulatedBytes = 0;
-        const uploadedFileNames = [];
+        const uploadedFileNames = selectedFiles.map(f => f.name);
+
+        // AŞAMA 1.5: Yükleme başlar başlamaz E-Tablo'ya "In Progress" kaydı ekle
+        updateProgressState("Kayıt Başlatılıyor...", "E-Tablo'da işlem sırası oluşturuluyor...", 0, 0);
+        const logStartResp = await callAppsScript({
+          action: "logUploadStart",
+          name,
+          surname,
+          fileNames: uploadedFileNames,
+          folderUrl: folderUrl,
+          documentCount: selectedFiles.length
+        });
+
+        if (logStartResp.success) {
+          rowNumber = logStartResp.rowNumber;
+          console.log("Sheets kaydı yapıldı, satır no: " + rowNumber);
+        } else {
+          console.warn("Sheets başlangıç kaydı başarısız:", logStartResp.error);
+        }
 
         // AŞAMA 2: Her dosyayı sırayla yükle
         for (let i = 0; i < selectedFiles.length; i++) {
@@ -534,7 +548,6 @@
           }
 
           accumulatedBytes += file.size;
-          uploadedFileNames.push(file.name);
 
           updateProgressState(
             `Dosya Yüklendi ✓ (${fileIndex}/${selectedFiles.length})`,
@@ -544,27 +557,40 @@
           );
         }
 
-        // AŞAMA 3: Sheets'e log kaydı ekle
-        updateProgressState("Kayıt Oluşturuluyor", "Google Sheets'e işleniyor...", 100, 99);
+        // AŞAMA 3: Sheets'teki "In Progress" durumunu "DONE" olarak güncelle
+        updateProgressState("Kayıt Güncelleniyor", "E-Tablo kaydı tamamlanıyor...", 100, 99);
 
-        const logResp = await callAppsScript({
-          action: "logUpload", name, surname,
-          fileNames: uploadedFileNames,
-          folderUrl: folderUrl,
-          documentCount: selectedFiles.length
-        });
-
-        if (!logResp.success) {
-          console.warn("Sheet log başarısız:", logResp.error);
+        if (rowNumber) {
+          const logCompleteResp = await callAppsScript({
+            action: "logUploadComplete",
+            rowNumber: rowNumber
+          });
+          if (!logCompleteResp.success) {
+            console.warn("Sheet durum güncellemesi başarısız:", logCompleteResp.error);
+          }
         }
 
-        // Başarı ekranı
+        // Başarı ekranı ve premium popup
         progressCard.classList.add('hidden');
         successCard.classList.remove('hidden');
-        folderLinkBtn.href = folderUrl;
+        showToast('Yükleme Başarıyla Tamamlandı!', 'success');
 
       } catch (error) {
-        alert("Yükleme hatası:\n" + error.message);
+        console.error("Yükleme hatası oluştu:", error);
+        
+        // Hata durumunda E-Tablo'daki durumu "Failed" olarak güncelle
+        if (rowNumber) {
+          try {
+            await callAppsScript({
+              action: "logUploadFailed",
+              rowNumber: rowNumber
+            });
+          } catch (e) {
+            console.warn("Failed durum güncellemesi başarısız:", e);
+          }
+        }
+
+        showToast("Hata: " + error.message, "error");
         progressCard.classList.add('hidden');
         uploadCard.classList.remove('hidden');
       }
@@ -639,6 +665,48 @@
       successCard.classList.add('hidden');
       uploadCard.classList.remove('hidden');
     });
+
+    /**
+     * Modern Toast Bildirimlerini gösterir.
+     * Tarayıcı alert kutusu yerine şık ve premium kartlar kullanır.
+     * @param {string} message - Gösterilecek mesaj metni
+     * @param {'success'|'error'} type - Bildirim türü
+     */
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      toast.className = `flex items-center gap-3 p-4 rounded-2xl shadow-2xl border backdrop-blur-md transition-all duration-500 translate-y-[-20px] opacity-0 ${
+        type === 'success'
+          ? 'bg-emerald-950/90 border-emerald-500/30 text-emerald-200 shadow-emerald-950/20'
+          : 'bg-rose-950/90 border-rose-500/30 text-rose-200 shadow-rose-950/20'
+      }`;
+
+      const icon = type === 'success' ? 'check-circle' : 'alert-circle';
+      const iconColor = type === 'success' ? 'text-emerald-400' : 'text-rose-400';
+
+      toast.innerHTML = `
+        <i data-lucide="${icon}" class="w-5 h-5 ${iconColor} shrink-0 animate-pulse"></i>
+        <div class="text-xs font-semibold leading-relaxed">${message}</div>
+      `;
+
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      // Animasyon tetikleme (giriş)
+      setTimeout(() => {
+        toast.classList.remove('translate-y-[-20px]', 'opacity-0');
+      }, 50);
+
+      // 5 saniye sonra otomatik kaldırma
+      setTimeout(() => {
+        toast.classList.add('translate-y-[-20px]', 'opacity-0');
+        setTimeout(() => {
+          toast.remove();
+        }, 500);
+      }, 5000);
+    }
 
     window.removeFile = removeFile;
   </script>
