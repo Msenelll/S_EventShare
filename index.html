@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>S_EventShare - Güvenli Dosya Paylaşımı</title>
+  <!-- Modern Tipografi için Google Fonts (Outfit) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons (Şık ikonlar için) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Outfit', 'sans-serif'],
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'spin-slow': 'spin 8s linear infinite',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Premium Cam Efekti (Glassmorphism) */
+    .glass {
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-input {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+    }
+    .glass-input:focus {
+      background: rgba(30, 41, 59, 0.8);
+      border-color: rgb(139, 92, 246);
+      box-shadow: 0 0 15px rgba(139, 92, 246, 0.25);
+    }
+    /* Özel Kaydırma Çubuğu */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.1);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(139, 92, 246, 0.3);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(139, 92, 246, 0.6);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans flex flex-col justify-between overflow-x-hidden relative">
+
+  <!-- Arka Plan Premium Işık Küreleri (Glows) -->
+  <div class="absolute top-[-10%] left-[-20%] w-[80vw] h-[80vw] md:w-[50vw] md:h-[50vw] rounded-full bg-violet-900/20 blur-[120px] pointer-events-none z-0"></div>
+  <div class="absolute bottom-[-10%] right-[-20%] w-[80vw] h-[80vw] md:w-[50vw] md:h-[50vw] rounded-full bg-fuchsia-900/15 blur-[120px] pointer-events-none z-0"></div>
+
+  <!-- Üst Bar (Header) -->
+  <header class="w-full max-w-md mx-auto px-6 pt-6 pb-2 flex items-center justify-between z-10 relative">
+    <div class="flex items-center gap-2">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-violet-600 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-violet-500/20">
+        <i data-lucide="share-2" class="w-5 h-5 text-white"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">S_EventShare</h1>
+        <p class="text-[10px] text-violet-400 tracking-wider font-semibold uppercase">Güvenli Medya Paylaşımı</p>
+      </div>
+    </div>
+    <span class="text-xs px-2.5 py-1 rounded-full bg-violet-500/10 border border-violet-500/25 text-violet-300 font-medium">v0.1.0</span>
+  </header>
+
+  <!-- Ana İçerik (Main Content) -->
+  <main class="flex-1 w-full max-w-md mx-auto px-4 py-4 flex flex-col justify-center z-10 relative">
+    
+    <!-- YÜKLEME FORMU KARTI -->
+    <div id="upload-card" class="glass rounded-3xl p-6 shadow-2xl shadow-slate-950/50 flex flex-col gap-6 relative overflow-hidden transition-all duration-500">
+      
+      <!-- Kart İçi Dekoratif Neon Çizgi -->
+      <div class="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-violet-500 to-fuchsia-500 opacity-60"></div>
+      
+      <div class="text-center">
+        <h2 class="text-xl font-bold text-white">Medya Gönderimi</h2>
+        <p class="text-xs text-slate-400 mt-1">Lütfen bilgilerinizi doldurun ve yüklenecek görselleri/videoları seçin.</p>
+      </div>
+
+      <form id="submission-form" class="flex flex-col gap-5" onsubmit="event.preventDefault();">
+        
+        <!-- İSİM VE SOYİSİM INPUT ALANLARI -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="flex flex-col gap-1.5">
+            <label for="user-name" class="text-xs font-semibold text-slate-300 ml-1">Adınız <span class="text-rose-500">*</span></label>
+            <input 
+              type="text" 
+              id="user-name" 
+              required 
+              placeholder="Ahmet" 
+              class="glass-input rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none"
+            >
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label for="user-surname" class="text-xs font-semibold text-slate-300 ml-1">Soyadınız <span class="text-rose-500">*</span></label>
+            <input 
+              type="text" 
+              id="user-surname" 
+              required 
+              placeholder="Yılmaz" 
+              class="glass-input rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none"
+            >
+          </div>
+        </div>
+
+        <!-- DOSYA SEÇİM ALANI (DRAG-AND-DROP) -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-semibold text-slate-300 ml-1">Dosyalar (Görsel veya Video) <span class="text-rose-500">*</span></label>
+          
+          <div 
+            id="drop-zone"
+            class="border-2 border-dashed border-slate-700 hover:border-violet-500/60 hover:bg-violet-950/10 rounded-2xl p-6 transition-all duration-300 cursor-pointer text-center flex flex-col items-center justify-center gap-2 group relative overflow-hidden"
+          >
+            <input 
+              type="file" 
+              id="file-input" 
+              multiple 
+              accept="image/*,video/*" 
+              class="absolute inset-0 opacity-0 cursor-pointer z-10"
+            >
+            <div class="w-12 h-12 rounded-full bg-slate-900 group-hover:bg-violet-950/40 flex items-center justify-center transition-colors duration-300 shadow-inner">
+              <i data-lucide="upload-cloud" class="w-6 h-6 text-slate-400 group-hover:text-violet-400 transition-colors duration-300"></i>
+            </div>
+            <div>
+              <p class="text-xs font-semibold text-slate-200">Dosya seçmek için dokunun veya sürükleyin</p>
+              <p class="text-[10px] text-slate-500 mt-1">Maksimum dosya boyutu: 510MB</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- SEÇİLEN DOSYALARIN LİSTESİ -->
+        <div id="file-list-container" class="hidden flex flex-col gap-2 max-h-[160px] overflow-y-auto pr-1">
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Seçilen Dosyalar</p>
+          <div id="file-list" class="flex flex-col gap-1.5">
+            <!-- JavaScript dinamik olarak dolduracak -->
+          </div>
+        </div>
+
+        <!-- BİLGİLENDİRME BANNERI -->
+        <div class="flex items-start gap-2 p-3 rounded-xl bg-violet-500/5 border border-violet-500/10 text-[11px] text-violet-300">
+          <i data-lucide="shield-check" class="w-4 h-4 text-violet-400 shrink-0 mt-0.5"></i>
+          <p>Yüklemeleriniz uçtan uca şifreli Google Drive ortamına doğrudan aktarılır. Kimlik bilgileriniz asla üçüncü şahıslarla paylaşılmaz.</p>
+        </div>
+
+        <!-- GÖNDER BUTONU -->
+        <button 
+          type="submit" 
+          id="submit-btn"
+          class="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 active:scale-[0.98] text-white font-semibold py-3.5 px-4 rounded-xl text-sm transition-all duration-300 shadow-lg shadow-violet-500/25 flex items-center justify-center gap-2"
+        >
+          <i data-lucide="send" class="w-4 h-4"></i>
+          Yüklemeyi Başlat
+        </button>
+
+      </form>
+    </div>
+
+    <!-- YÜKLEME SÜRECİ EKRANI (LOADING & PROGRESS OVERLAY) -->
+    <div id="progress-card" class="hidden glass rounded-3xl p-6 shadow-2xl shadow-slate-950/50 flex flex-col items-center justify-center gap-6 relative min-h-[300px] text-center">
+      
+      <!-- Dönen Glow Halka Efekti -->
+      <div class="relative w-20 h-20 flex items-center justify-center">
+        <div class="absolute inset-0 rounded-full border-4 border-slate-900"></div>
+        <div class="absolute inset-0 rounded-full border-4 border-t-violet-500 border-r-fuchsia-500 animate-spin-slow"></div>
+        <i data-lucide="loader-2" class="w-8 h-8 text-violet-400 animate-spin shrink-0"></i>
+      </div>
+
+      <div class="flex flex-col gap-1.5 w-full">
+        <h3 id="progress-title" class="text-md font-bold text-white">Yükleme Başlatılıyor...</h3>
+        <p id="progress-subtitle" class="text-xs text-slate-400">Google Drive ile güvenli bağlantı kuruluyor...</p>
+      </div>
+
+      <!-- İlerleme Barları (Progress Bars) -->
+      <div class="w-full flex flex-col gap-4 mt-2">
+        <!-- Aktif Dosya İlerlemesi -->
+        <div class="flex flex-col gap-1">
+          <div class="flex justify-between text-[10px] font-semibold text-slate-400">
+            <span>Aktif Dosya</span>
+            <span id="file-percent">0%</span>
+          </div>
+          <div class="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden">
+            <div id="file-progress-bar" class="h-full w-0 bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full transition-all duration-300"></div>
+          </div>
+        </div>
+
+        <!-- Toplam İlerleme -->
+        <div class="flex flex-col gap-1">
+          <div class="flex justify-between text-[10px] font-bold text-violet-300">
+            <span>TOPLAM İLERLEME</span>
+            <span id="total-percent">0%</span>
+          </div>
+          <div class="w-full h-3.5 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-violet-500/10">
+            <div id="total-progress-bar" class="h-full w-0 bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 rounded-full transition-all duration-300 shadow-lg shadow-violet-500/20"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-[10px] text-slate-500 mt-2 flex items-center justify-center gap-1.5">
+        <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+        <span>Lütfen tarayıcınızı kapatmayın veya sayfayı yenilemeyin.</span>
+      </div>
+    </div>
+
+    <!-- BAŞARILI EKRANI (SUCCESS SCREEN) -->
+    <div id="success-card" class="hidden glass rounded-3xl p-6 shadow-2xl shadow-slate-950/50 flex flex-col items-center justify-center gap-6 relative min-h-[350px] text-center overflow-hidden">
+      
+      <!-- Başarı Efekti Neon Glow -->
+      <div class="absolute inset-0 bg-emerald-500/5 blur-[50px] rounded-full"></div>
+
+      <div class="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shadow-lg shadow-emerald-500/10 animate-bounce">
+        <i data-lucide="check-circle" class="w-8 h-8 text-emerald-400"></i>
+      </div>
+
+      <div class="flex flex-col gap-1.5 z-10">
+        <h3 class="text-xl font-bold text-white">Yükleme Başarıyla Tamamlandı!</h3>
+        <p class="text-xs text-slate-400">Tüm dosyalarınız güvenli bir şekilde Google Drive klasörünüze aktarıldı ve kayıt altına alındı.</p>
+      </div>
+
+      <!-- Kullanıcı Klasör Linki Butonu -->
+      <a 
+        id="folder-link-btn"
+        href="#" 
+        target="_blank"
+        class="z-10 w-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/35 text-emerald-300 font-semibold py-3 px-4 rounded-xl text-xs transition-all duration-300 flex items-center justify-center gap-2 group"
+      >
+        <i data-lucide="folder-open" class="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform"></i>
+        Google Drive Klasörünü Aç
+      </a>
+
+      <!-- Yeni Yükleme Başlat Butonu -->
+      <button 
+        id="reset-btn"
+        class="z-10 w-full bg-slate-900 hover:bg-slate-850 text-slate-300 font-medium py-3 px-4 rounded-xl text-xs transition-colors duration-300 border border-slate-800"
+      >
+        Yeni Dosya Yükle
+      </button>
+    </div>
+
+  </main>
+
+  <!-- Alt Bilgi (Footer) -->
+  <footer class="w-full max-w-md mx-auto px-6 py-4 text-center text-[10px] text-slate-600 z-10 relative">
+    <p>© 2026 S_EventShare. Google Drive & Apps Script API Altyapısı ile Korunmaktadır.</p>
+  </footer>
+
+  <!-- ==========================================
+       🚀 JAVASCRIPT KODLARI (UPLOAD PROTOCOL)
+       ========================================== -->
+  <script>
+    // ==========================================
+    // 🔗 API YAPILANDIRMASI
+    // ==========================================
+    // Google Apps Script Web App dağıtım URL'nizi buraya yapıştırın.
+    const SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+    
+    // Parçalı yükleme threshold'u: 10 MB (10 * 1024 * 1024 bytes)
+    // 10 MB'tan büyük dosyalar 5MB'lık parçalar halinde yüklenir.
+    const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB (Not: Google Drive resumable API'si için 256KB'ın katı olmalıdır. 5MB tam katıdır.)
+
+    // ==========================================
+    // 📌 DOM BİLEŞENLERİ
+    // ==========================================
+    const uploadCard = document.getElementById('upload-card');
+    const progressCard = document.getElementById('progress-card');
+    const successCard = document.getElementById('success-card');
+    const form = document.getElementById('submission-form');
+    const nameInput = document.getElementById('user-name');
+    const surnameInput = document.getElementById('user-surname');
+    const fileInput = document.getElementById('file-input');
+    const dropZone = document.getElementById('drop-zone');
+    const fileListContainer = document.getElementById('file-list-container');
+    const fileList = document.getElementById('file-list');
+    
+    const progressTitle = document.getElementById('progress-title');
+    const progressSubtitle = document.getElementById('progress-subtitle');
+    const filePercent = document.getElementById('file-percent');
+    const fileProgressBar = document.getElementById('file-progress-bar');
+    const totalPercent = document.getElementById('total-percent');
+    const totalProgressBar = document.getElementById('total-progress-bar');
+    
+    const folderLinkBtn = document.getElementById('folder-link-btn');
+    const resetBtn = document.getElementById('reset-btn');
+
+    let selectedFiles = [];
+
+    // İkonları İlklendir
+    lucide.createIcons();
+
+    // ==========================================
+    // 📂 DOSYA İŞLEMLERİ VE DRAG & DROP
+    // ==========================================
+    
+    // Seçim değiştiğinde dosyaları ekle
+    fileInput.addEventListener('change', handleFileSelection);
+
+    // Drag-over efekti
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-violet-500', 'bg-violet-950/20');
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-violet-500', 'bg-violet-950/20');
+      }, false);
+    });
+
+    // Bırakılan dosyaları işleme
+    dropZone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files.length > 0) {
+        addFilesToList(files);
+      }
+    });
+
+    function handleFileSelection(e) {
+      if (fileInput.files.length > 0) {
+        addFilesToList(fileInput.files);
+      }
+    }
+
+    function addFilesToList(files) {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Sadece görsel ve video kontrolü
+        if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+          alert(`Desteklenmeyen dosya türü: ${file.name}. Yalnızca görsel ve video yükleyebilirsiniz.`);
+          continue;
+        }
+
+        // Boyut kontrolü (510MB)
+        if (file.size > 510 * 1024 * 1024) {
+          alert(`Maksimum dosya boyutu (510MB) aşıldı: ${file.name}`);
+          continue;
+        }
+
+        // Listede aynı dosya adından yoksa ekle
+        if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+          selectedFiles.push(file);
+        }
+      }
+      
+      updateFileListView();
+    }
+
+    function removeFile(index) {
+      selectedFiles.splice(index, 1);
+      updateFileListView();
+    }
+
+    function formatBytes(bytes, decimals = 2) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const dm = decimals < 0 ? 0 : decimals;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+
+    function updateFileListView() {
+      fileList.innerHTML = '';
+      
+      if (selectedFiles.length > 0) {
+        fileListContainer.classList.remove('hidden');
+        
+        selectedFiles.forEach((file, index) => {
+          const isVideo = file.type.startsWith('video/');
+          const fileIcon = isVideo ? 'video' : 'image';
+          
+          const row = document.createElement('div');
+          row.className = "flex items-center justify-between p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs";
+          row.innerHTML = `
+            <div class="flex items-center gap-2.5 truncate max-w-[80%]">
+              <i data-lucide="${fileIcon}" class="w-4 h-4 text-violet-400 shrink-0"></i>
+              <div class="truncate">
+                <p class="font-medium text-slate-200 truncate">${file.name}</p>
+                <p class="text-[9px] text-slate-500 font-semibold uppercase">${formatBytes(file.size)}</p>
+              </div>
+            </div>
+            <button type="button" onclick="removeFile(${index})" class="p-1 rounded-lg hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 transition-colors">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          `;
+          fileList.appendChild(row);
+        });
+        
+        lucide.createIcons();
+      } else {
+        fileListContainer.classList.add('hidden');
+      }
+    }
+
+    // ==========================================
+    // ⚡ BÜYÜK DOSYA & RESUMABLE YÜKLEME ALGORİTMASI
+    // ==========================================
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      if (SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE' || !SCRIPT_URL) {
+        alert('Lütfen öncelikle index.html kodundaki SCRIPT_URL değişkenini Apps Script Web App URL\'inizle güncelleyin!');
+        return;
+      }
+
+      if (selectedFiles.length === 0) {
+        alert('Lütfen yüklemek için en az bir görsel veya video dosyası seçin.');
+        return;
+      }
+
+      // UI Geçişi
+      uploadCard.classList.add('hidden');
+      progressCard.classList.remove('hidden');
+      
+      const name = nameInput.value.trim();
+      const surname = surnameInput.value.trim();
+      
+      try {
+        // AŞAMA 1: Drive üzerinde kullanıcıya özel klasör oluştur
+        updateProgressState("Bağlantı Kuruluyor...", "Google Drive üzerinde size özel klasör açılıyor...", 0, 0);
+        
+        const folderResponse = await callAppsScript({
+          action: "createFolder",
+          name: name,
+          surname: surname
+        });
+
+        if (!folderResponse.success) {
+          throw new Error("Klasör oluşturma hatası: " + folderResponse.error);
+        }
+
+        const folderId = folderResponse.folderId;
+        const folderUrl = folderResponse.folderUrl;
+        
+        // Toplam yüklenecek veri boyutu hesabı
+        const totalBytes = selectedFiles.reduce((acc, file) => acc + file.size, 0);
+        let accumulatedBytesUploaded = 0;
+        
+        const uploadedFileNames = [];
+
+        // AŞAMA 2: Dosyaları Sırayla Resumable API ile Yükle
+        for (let i = 0; i < selectedFiles.length; i++) {
+          const file = selectedFiles[i];
+          const fileIndex = i + 1;
+          
+          updateProgressState(
+            `Dosya Hazırlanıyor (${fileIndex}/${selectedFiles.length})`,
+            `${file.name} için yükleme oturumu başlatılıyor...`,
+            0,
+            Math.round((accumulatedBytesUploaded / totalBytes) * 100)
+          );
+
+          // Google Drive Resumable Upload oturumunu başlat
+          const uploadSession = await callAppsScript({
+            action: "initiateUpload",
+            fileName: file.name,
+            fileSize: file.size,
+            mimeType: file.type || "application/octet-stream",
+            folderId: folderId
+          });
+
+          if (!uploadSession.success) {
+            throw new Error(`${file.name} için yükleme oturumu açılamadı: ${uploadSession.error}`);
+          }
+
+          const uploadUrl = uploadSession.uploadUrl;
+
+          // Parçalı Yükleme (Chunked PUT requests)
+          let startByte = 0;
+          
+          while (startByte < file.size) {
+            const endByte = Math.min(startByte + CHUNK_SIZE, file.size);
+            const chunkSlice = file.slice(startByte, endByte);
+            const currentChunkSize = endByte - startByte;
+
+            updateProgressState(
+              `Dosya Yükleniyor (${fileIndex}/${selectedFiles.length})`,
+              `${file.name} aktarılıyor... (${formatBytes(startByte)} / ${formatBytes(file.size)})`,
+              Math.round((startByte / file.size) * 100),
+              Math.round(((accumulatedBytesUploaded + startByte) / totalBytes) * 100)
+            );
+
+            // Parçayı Google API'ye yükle (Hata durumunda 3 kez yeniden deneme destekli)
+            await uploadChunkWithRetry(uploadUrl, chunkSlice, startByte, endByte, file.size);
+            
+            startByte = endByte;
+          }
+
+          // Dosya yüklemesi tamamlandı
+          accumulatedBytesUploaded += file.size;
+          uploadedFileNames.push(file.name);
+
+          updateProgressState(
+            `Dosya Yüklendi (${fileIndex}/${selectedFiles.length})`,
+            `${file.name} tamamlandı!`,
+            100,
+            Math.round((accumulatedBytesUploaded / totalBytes) * 100)
+          );
+        }
+
+        // AŞAMA 3: E-Tabloya günlük kaydı ekle (Log)
+        updateProgressState(
+          "Günlük Kaydı Oluşturuluyor",
+          "Yükleme verileri Google Sheets'e işleniyor...",
+          100,
+          99
+        );
+
+        const logResponse = await callAppsScript({
+          action: "logUpload",
+          name: name,
+          surname: surname,
+          fileNames: uploadedFileNames,
+          folderUrl: folderUrl,
+          documentCount: selectedFiles.length
+        });
+
+        if (!logResponse.success) {
+          console.warn("Sheet log kaydı başarısız oldu:", logResponse.error);
+        }
+
+        // BİTİRİŞ: Başarı kartını aktifleştir
+        progressCard.classList.add('hidden');
+        successCard.classList.remove('hidden');
+        folderLinkBtn.href = folderUrl;
+
+      } catch (error) {
+        alert("Yükleme işlemi sırasında bir hata oluştu:\n" + error.message);
+        // Hata durumunda formu sıfırlamadan geri getir
+        progressCard.classList.add('hidden');
+        uploadCard.classList.remove('hidden');
+      }
+    });
+
+    /**
+     * Google Apps Script Web App'e POST isteği atan yardımcı fonksiyon (CORS/Redirect Uyumlu).
+     */
+    async function callAppsScript(payload) {
+      // POST isteği 'text/plain' olarak atılırsa CORS OPTIONS preflight tetiklenmez.
+      const response = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify(payload)
+      });
+      return await response.json();
+    }
+
+    /**
+     * Belirlenen dosya parçasını (chunk) Google Drive API'sine PUT isteği ile yükler.
+     * Ağ hatalarına karşı otomatik yeniden deneme (retry) mekanizmasına sahiptir.
+     */
+    async function uploadChunkWithRetry(uploadUrl, chunk, start, end, totalSize, retryCount = 0) {
+      const maxRetries = 4;
+      const rangeHeader = `bytes ${start}-${end - 1}/${totalSize}`;
+      
+      try {
+        const response = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Length': (end - start).toString(),
+            'Content-Range': rangeHeader
+          },
+          body: chunk
+        });
+
+        // 308 (Resume Incomplete) veya 200/201 (Başarılı Sonuç) beklenecektir.
+        if (response.status === 308 || response.status === 200 || response.status === 201) {
+          return true;
+        } else {
+          throw new Error(`Google API beklenmeyen durum kodu döndü: ${response.status}`);
+        }
+      } catch (err) {
+        if (retryCount < maxRetries) {
+          // Üstel geri çekilme (exponential backoff) ile yeniden deneme
+          const delay = Math.pow(2, retryCount) * 1500;
+          console.warn(`Hata: ${err.message}. ${delay}ms sonra tekrar deneniyor (${retryCount + 1}/${maxRetries})...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return await uploadChunkWithRetry(uploadUrl, chunk, start, end, totalSize, retryCount + 1);
+        } else {
+          throw new Error(`Dosya parçası ${rangeHeader} yüklenemedi. Maksimum deneme sınırına ulaşıldı. Lütfen internet bağlantınızı kontrol edin.`);
+        }
+      }
+    }
+
+    /**
+     * İlerleme durumunu ve progress bar barlarını dinamik olarak günceller.
+     */
+    function updateProgressState(title, subtitle, activePercent, totalPercentVal) {
+      progressTitle.textContent = title;
+      progressSubtitle.textContent = subtitle;
+      
+      filePercent.textContent = `${activePercent}%`;
+      fileProgressBar.style.width = `${activePercent}%`;
+      
+      totalPercent.textContent = `${totalPercentVal}%`;
+      totalProgressBar.style.width = `${totalPercentVal}%`;
+    }
+
+    // ==========================================
+    // 🔄 SIFIRLAMA VE YENİDEN BAŞLATMA
+    // ==========================================
+    resetBtn.addEventListener('click', () => {
+      selectedFiles = [];
+      updateFileListView();
+      form.reset();
+      
+      successCard.classList.add('hidden');
+      uploadCard.classList.remove('hidden');
+    });
+
+    window.removeFile = removeFile;
+  </script>
+</body>
+</html>
