@@ -23,6 +23,9 @@ Bu dosya, projede geliştiricinin (Antigravity) tamamladığı ve sizden (Kullan
   - **Durum:** Tamamlandı (Done) - ID: `1gELiIzCicQyrI0deVMCOVj8qsUp3aW2u6A2LnIjdsmE`
 
 ### 🌐 Google Apps Script Dağıtımı (Deployment)
+- [ ] **Görev 3.1: Apps Script Kodunu v1.0.2 Sürümüne Güncelleme (Yeni!)**
+  - **Açıklama:** [Code.gs](file:///C:/repo/S_EventShare/src/Code.gs) dosyasının son halini kopyalayın, Apps Script editörünüzdeki kodla değiştirin ve "Dağıt" > "Dağıtımları yönet" > Düzenle > "Yeni Sürüm" olarak güncelleyin.
+  - **Durum:** Bekliyor (Todo)
 - [ ] **Görev 3: Apps Script Kodunu Yapıştırma ve ID'leri Güncelleme**
   - **Açıklama:** Google Drive'da yeni bir Google Apps Script projesi oluşturun. Paylaşacağımız `Code.gs` içeriğini buraya yapıştırın. Kodun en üstündeki `PARENT_FOLDER_ID` ve `SPREADSHEET_ID` alanlarını 1. ve 2. görevde aldığınız ID'lerle güncelleyin.
   - **Durum:** Bekliyor (Todo)
@@ -59,4 +62,14 @@ Bu dosya, projede geliştiricinin (Antigravity) tamamladığı ve sizden (Kullan
 - [x] **Geliştirici Görevi 2: Git Deposu & Branch Yapısının Hazırlanması**
   - **Açıklama:** Depo `c:\repo\S_EventShare` dizininde ilklendirildi, `develop` ve `feature/setup` branch'leri oluşturuldu.
   - **Tarih:** 26 Mayıs 2026
+  - **Durum:** DONE
+
+### 📦 Sürüm: `v1.0.2` (Sprint v1.0.2 - Sheets Durum Yönetimi & Arayüz İyileştirmeleri)
+- [x] **Geliştirici Görevi 1: Google Sheets Durum Yönetimi Altyapısı**
+  - **Açıklama:** Klasör oluştuktan hemen sonra "In Progress" kaydı ekleme, kilit mekanizmasıyla `rowNumber` alma, yükleme bittiğinde "DONE", hata anında "Failed" olarak güncelleme fonksiyonları backend ve frontend'e eklendi.
+  - **Tarih:** 27 Mayıs 2026
+  - **Durum:** DONE
+- [x] **Geliştirici Görevi 2: Premium Bildirimler & Arayüz Revizyonları**
+  - **Açıklama:** Google Drive butonu başarı ekranından kaldırıldı. Arayüze "Sinem & Mehmet Galerisi" başlığı, v1.0.2 sürümü, "Made by Mehmet Şenel" imzalı footer ve tarayıcı `alert()` pencereleri yerine modern toast bildirim yapısı eklendi.
+  - **Tarih:** 27 Mayıs 2026
   - **Durum:** DONE

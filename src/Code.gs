@@ -1,6 +1,6 @@
 /**
  * S_EventShare - Google Apps Script Backend (Full Proxy Upload)
- * Sürüm: v0.9.0
+ * Sürüm: v1.0.2
  * Açıklama: Dosya verisi Base64 olarak Apps Script'e gönderilir,
  *            Apps Script sunucu tarafından Google Drive'a yükler.
  *            CORS sorunu tamamen ortadan kalkar (tarayıcı-Drive arası direkt iletişim YOK).
@@ -19,14 +19,14 @@ var SPREADSHEET_ID   = "1gELiIzCicQyrI0deVMCOVj8qsUp3aW2u6A2LnIjdsmE";
 function doGet(e) {
   return ContentService.createTextOutput(JSON.stringify({
     status: "active",
-    message: "S_EventShare Backend v0.9.0 aktif!",
+    message: "S_EventShare Backend v1.0.2 aktif!",
     timestamp: new Date().toISOString()
   })).setMimeType(ContentService.MimeType.JSON);
 }
 
 /**
  * Tüm istekleri karşılayan ana yönlendirici.
- * action: createFolder | uploadChunk | logUpload
+ * action: createFolder | uploadChunk | logUploadStart | logUploadComplete | logUploadFailed
  */
 function doPost(e) {
   var result = {};
@@ -55,8 +55,18 @@ function doPost(e) {
       // Geriye dönük uyumluluk: artık kullanılmıyor, uploadChunk ile değiştirildi
       result = initiateResumableUpload(data.fileName, data.fileSize, data.mimeType, data.folderId);
 
+    } else if (action === "logUploadStart") {
+      result = logUploadStart(data.name, data.surname, data.fileNames, data.folderUrl, data.documentCount);
+
+    } else if (action === "logUploadComplete") {
+      result = logUploadComplete(data.rowNumber);
+
+    } else if (action === "logUploadFailed") {
+      result = logUploadFailed(data.rowNumber);
+
     } else if (action === "logUpload") {
-      result = logUploadToSheet(data.name, data.surname, data.fileNames, data.folderUrl, data.documentCount);
+      // Geriye dönük uyumluluk için eski metot
+      result = logUploadStart(data.name, data.surname, data.fileNames, data.folderUrl, data.documentCount);
 
     } else {
       result = { success: false, error: "Geçersiz action: " + action };
@@ -203,26 +213,95 @@ function uploadChunkToDrive(uploadUrl, chunkBase64, start, end, totalSize) {
 }
 
 /**
- * Sheets'e yükleme kaydı ekler.
+ * Sheets'e ilk yükleme kaydını "In Progress" durumuyla ekler.
+ * Eşzamanlılık (concurrency) sorunlarını önlemek için LockService kullanır.
+ * Eklenen satırın numarasını (rowNumber) döndürür.
  */
-function logUploadToSheet(name, surname, fileNames, folderUrl, documentCount) {
+function logUploadStart(name, surname, fileNames, folderUrl, documentCount) {
   try {
     if (!SPREADSHEET_ID || SPREADSHEET_ID === "YOUR_SPREADSHEET_ID_HERE") {
       return { success: false, error: "SPREADSHEET_ID yapılandırılmamış." };
     }
 
     var sheet   = SpreadsheetApp.openById(SPREADSHEET_ID).getActiveSheet();
-    var now     = new Date();
-    var dateStr = Utilities.formatDate(now, "GMT+3", "yyyy-MM-dd");
-    var timeStr = Utilities.formatDate(now, "GMT+3", "HH:mm:ss");
-    var filesStr = Array.isArray(fileNames) ? fileNames.join(", ") : fileNames;
+    var lock    = LockService.getScriptLock();
+    var rowNumber = -1;
 
-    sheet.appendRow([dateStr, timeStr, name.trim(), surname.trim(), documentCount, filesStr, folderUrl]);
+    // 15 saniye boyunca kilit bekler
+    lock.waitLock(15000);
+    try {
+      var now     = new Date();
+      var dateStr = Utilities.formatDate(now, "GMT+3", "yyyy-MM-dd");
+      var timeStr = Utilities.formatDate(now, "GMT+3", "HH:mm:ss");
+      var filesStr = Array.isArray(fileNames) ? fileNames.join(", ") : fileNames;
 
-    console.log("logUpload OK");
+      // 8 Sütun: Tarih, Saat, Ad, Soyad, Belge Sayısı, Dosya İsimleri, Klasör, Status (In Progress)
+      sheet.appendRow([dateStr, timeStr, name.trim(), surname.trim(), documentCount, filesStr, folderUrl, "In Progress"]);
+      rowNumber = sheet.getLastRow();
+    } finally {
+      lock.releaseLock();
+    }
+
+    console.log("logUploadStart OK | Row: " + rowNumber);
+    return { success: true, rowNumber: rowNumber };
+  } catch (err) {
+    console.error("logUploadStart HATA: " + err);
+    return { success: false, error: err.toString() };
+  }
+}
+
+/**
+ * Yükleme başarıyla tamamlandığında Sheets'teki ilgili satırın durumunu DONE yapar.
+ */
+function logUploadComplete(rowNumber) {
+  try {
+    if (!rowNumber || rowNumber < 1) {
+      return { success: false, error: "Geçersiz satır numarası: " + rowNumber };
+    }
+    
+    var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getActiveSheet();
+    var lock  = LockService.getScriptLock();
+
+    lock.waitLock(15000);
+    try {
+      // H sütunu = 8. sütun
+      sheet.getRange(rowNumber, 8).setValue("DONE");
+    } finally {
+      lock.releaseLock();
+    }
+
+    console.log("logUploadComplete OK | Row: " + rowNumber);
     return { success: true };
   } catch (err) {
-    console.error("logUpload HATA: " + err);
+    console.error("logUploadComplete HATA: " + err);
+    return { success: false, error: err.toString() };
+  }
+}
+
+/**
+ * Yükleme başarısız olduğunda veya yarıda kaldığında Sheets'teki ilgili satırın durumunu Failed yapar.
+ */
+function logUploadFailed(rowNumber) {
+  try {
+    if (!rowNumber || rowNumber < 1) {
+      return { success: false, error: "Geçersiz satır numarası: " + rowNumber };
+    }
+
+    var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getActiveSheet();
+    var lock  = LockService.getScriptLock();
+
+    lock.waitLock(15000);
+    try {
+      // H sütunu = 8. sütun
+      sheet.getRange(rowNumber, 8).setValue("Failed");
+    } finally {
+      lock.releaseLock();
+    }
+
+    console.log("logUploadFailed OK | Row: " + rowNumber);
+    return { success: true };
+  } catch (err) {
+    console.error("logUploadFailed HATA: " + err);
     return { success: false, error: err.toString() };
   }
 }
