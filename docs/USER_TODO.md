@@ -7,10 +7,10 @@ Bu dosya, projede geliştiricinin (Antigravity) tamamladığı ve sizden (Kullan
 ## 🚀 Bekleyen Kullanıcı Aksiyonları (User Pending Actions)
 
 ### 📂 Google Drive & Sheets Yapılandırması
-- [ ] **Görev 1: Ana Klasör Oluşturma**
+- [x] **Görev 1: Ana Klasör Oluşturma**
   - **Açıklama:** Google Drive'ınızda tüm yüklemelerin kaydedileceği ana bir klasör oluşturun (örn: `S_EventShare_Uploads`). Bu klasörün **ID**'sini kopyalayın.
-  - **Durum:** Bekliyor (Todo)
-- [ ] **Görev 2: Master Tablo (Google Sheets) Oluşturma**
+  - **Durum:** Tamamlandı (Done) - ID: `1lILYdQahFaFe2mCpWCG6QDiM3Y1ueT-W`
+- [x] **Görev 2: Master Tablo (Google Sheets) Oluşturma**
   - **Açıklama:** Google Drive'ınızda günlük kayıtlarının tutulacağı yeni bir Google E-Tablo oluşturun. İlk satıra şu sütun başlıklarını ekleyin:
     - *A Sütunu:* `Tarih`
     - *B Sütunu:* `Saat`
@@ -20,7 +20,7 @@ Bu dosya, projede geliştiricinin (Antigravity) tamamladığı ve sizden (Kullan
     - *F Sütunu:* `Dosya İsimleri`
     - *G Sütunu:* `Klasör Bağlantısı`
   - Bu tablonun **ID**'sini veya **URL**'sini kopyalayın.
-  - **Durum:** Bekliyor (Todo)
+  - **Durum:** Tamamlandı (Done) - ID: `1gELiIzCicQyrI0deVMCOVj8qsUp3aW2u6A2LnIjdsmE`
 
 ### 🌐 Google Apps Script Dağıtımı (Deployment)
 - [ ] **Görev 3: Apps Script Kodunu Yapıştırma ve ID'leri Güncelleme**
