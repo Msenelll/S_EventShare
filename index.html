@@ -283,9 +283,21 @@
     // Google Apps Script Web App dağıtım URL'nizi buraya yapıştırın.
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwXbV7_1yxUjG9-U640nxOiDFpYxTAHcLT04ROWp4sH9J-2L5EsqTCSLlI2AQiVu5TD/exec';
 
-    // Parçalı yükleme threshold'u: 10 MB (10 * 1024 * 1024 bytes)
-    // 10 MB'tan büyük dosyalar 5MB'lık parçalar halinde yüklenir.
-    const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB (Not: Google Drive resumable API'si için 256KB'ın katı olmalıdır. 5MB tam katıdır.)
+    // Dinamik Parça Boyutu Belirleme
+    // Dosya boyutuna göre ideal parça boyutunu hesaplar (Google Drive 256KB katı kuralına uygun).
+    // Büyük parçalar, TCP pencere boyutunun genişlemesini sağlayarak yükleme hızını dramatik şekilde artırır.
+    function calculateChunkSize(fileSize) {
+      const MB = 1024 * 1024;
+      if (fileSize <= 10 * MB) {
+        return 5 * MB;   // 10MB ve altı için 5MB parçalar (toplam 1-2 istek)
+      } else if (fileSize <= 50 * MB) {
+        return 10 * MB;  // 50MB ve altı için 10MB parçalar (toplam 2-5 istek)
+      } else if (fileSize <= 200 * MB) {
+        return 20 * MB;  // 200MB ve altı için 20MB parçalar (toplam 5-10 istek)
+      } else {
+        return 35 * MB;  // 510MB'a kadar olan büyük dosyalar için 35MB parçalar (toplam 10-15 istek)
+      }
+    }
 
     // ==========================================
     // 📌 DOM BİLEŞENLERİ
@@ -501,9 +513,10 @@
 
           // Parçalı Yükleme (Chunked PUT requests)
           let startByte = 0;
+          const activeChunkSize = calculateChunkSize(file.size);
 
           while (startByte < file.size) {
-            const endByte = Math.min(startByte + CHUNK_SIZE, file.size);
+            const endByte = Math.min(startByte + activeChunkSize, file.size);
             const chunkSlice = file.slice(startByte, endByte);
             const currentChunkSize = endByte - startByte;
 
