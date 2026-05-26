@@ -168,8 +168,10 @@ function uploadChunkToDrive(uploadUrl, chunkBase64, start, end, totalSize) {
     var response   = UrlFetchApp.fetch(uploadUrl, {
       method:  "put",
       headers: {
-        "Content-Range":   rangeHeader,
-        "Content-Length":  chunkLength.toString()
+        "Content-Range": rangeHeader
+        // Content-Length KASITLI EKSİK:
+        // UrlFetchApp bu başlığı "yasaklı" sayar ve manuel ayarlamaya izin vermez.
+        // Payload'dan boyutu otomatik hesaplar — elle vermek Exception'a yol açar.
       },
       payload:            blob.getBytes(),
       muteHttpExceptions: true
