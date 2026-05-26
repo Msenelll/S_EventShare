@@ -283,19 +283,18 @@
     // Google Apps Script Web App dağıtım URL'nizi buraya yapıştırın.
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwXbV7_1yxUjG9-U640nxOiDFpYxTAHcLT04ROWp4sH9J-2L5EsqTCSLlI2AQiVu5TD/exec';
 
-    // Dinamik Parça Boyutu Belirleme
+    // Dinamik Parça Boyutu Belirleme (Güncellenmiş - Ultra Güvenli Sınırlar)
     // Dosya boyutuna göre ideal parça boyutunu hesaplar (Google Drive 256KB katı kuralına uygun).
-    // Büyük parçalar, TCP pencere boyutunun genişlemesini sağlayarak yükleme hızını dramatik şekilde artırır.
+    // Yavaş internet bağlantılarında (özellikle mobil yüklemelerde) 20MB veya 35MB boyutundaki büyük parçalar 
+    // zaman aşımına (timeout) düşebileceği için üst parça limiti maksimum 10MB olarak sınırlandırılmıştır.
     function calculateChunkSize(fileSize) {
       const MB = 1024 * 1024;
       if (fileSize <= 10 * MB) {
-        return 5 * MB;   // 10MB ve altı için 5MB parçalar (toplam 1-2 istek)
+        return 2.5 * MB; // 10MB ve altı için 2.5MB parçalar (hızlı ve kopmalara karşı son derece dirençli)
       } else if (fileSize <= 50 * MB) {
-        return 10 * MB;  // 50MB ve altı için 10MB parçalar (toplam 2-5 istek)
-      } else if (fileSize <= 200 * MB) {
-        return 20 * MB;  // 200MB ve altı için 20MB parçalar (toplam 5-10 istek)
+        return 5 * MB;   // 50MB ve altı için 5MB parçalar (optimum güvenlik ve hız dengesi)
       } else {
-        return 35 * MB;  // 510MB'a kadar olan büyük dosyalar için 35MB parçalar (toplam 10-15 istek)
+        return 10 * MB;  // 50MB ve üzeri büyük dosyalar için maksimum 10MB (güvenli hız sınırı, timeout riskini sıfırlar)
       }
     }
 
